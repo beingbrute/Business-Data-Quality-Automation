@@ -1,0 +1,22 @@
+DateTime.GetCurrentDateTime.Local DateTimeFormat: DateTime.DateTimeFormat.DateAndTime CurrentDateTime=> CurrentDateTime
+SET ProjectDir TO $'''C:\\Users\\hp\\Desktop\\Business-Data-Quality-Automation'''
+Scripting.RunDOSCommand.RunDOSCommand DOSCommandOrApplication: $'''C:\\Users\\hp\\anaconda3\\python.exe src\\validate.py''' WorkingDirectory: ProjectDir StandardOutput=> CommandOutput StandardError=> CommandErrorOutput ExitCode=> CommandExitCode
+IF CommandExitCode <> 0 THEN
+    File.WriteText File: $'''%ProjectDir%\\logs\\pad_run_log.txt''' TextToWrite: $'''%CurrentDateTime% RUN FAILED (exit %CommandExitCode%): %CommandOutput%''' AppendNewLine: True IfFileExists: File.IfFileExists.Append Encoding: File.FileEncoding.Unicode
+    EXIT Code: 0 ErrorMessage: $'''Data quality check failed. See logs\\pad_run_log.txt'''
+END
+Text.ConvertDateTimeToText.FromCustomDateTime DateTime: CurrentDateTime CustomFormat: $'''yyyy-MM-dd''' Result=> FormattedDateTime
+Folder.Create FolderPath: $'''%ProjectDir%\\reports''' FolderName: FormattedDateTime Folder=> NewFolder
+Folder.GetFiles Folder: $'''%ProjectDir%\\reports''' FileFilter: $'''dq_report_*.xlsx''' IncludeSubfolders: False FailOnAccessDenied: True SortBy1: Folder.SortBy.CreationTime SortDescending1: True SortBy2: Folder.SortBy.NoSort SortDescending2: False SortBy3: Folder.SortBy.NoSort SortDescending3: False Files=> Files
+File.Move Files: Files[0] Destination: NewFolder IfFileExists: File.IfExists.Overwrite MovedFiles=> MovedFiles
+Excel.LaunchExcel.LaunchAndOpenUnderExistingProcess Path: MovedFiles[0] Visible: False ReadOnly: False UseMachineLocale: False Instance=> ExcelInstance
+Excel.SetActiveWorksheet.ActivateWorksheetByName Instance: ExcelInstance Name: $'''Summary'''
+Excel.ReadFromExcel.ReadAllCells Instance: ExcelInstance GetCellContentsMode: Excel.GetCellContentsMode.TypedValues FirstLineIsHeader: True RangeValue=> ExcelData
+Excel.CloseExcel.Close Instance: ExcelInstance
+SET FailCount TO 0
+LOOP FOREACH CurrentItem IN ExcelData
+    IF CurrentItem['status'] = $'''FAIL''' THEN
+        Variables.IncreaseVariable Value: FailCount IncrementValue: 1
+    END
+END
+File.WriteText File: $'''%ProjectDir%\\logs\\pad_run_log.txt''' TextToWrite: $'''%CurrentDateTime% RUN OK: %FailCount% checks failed. Report: %MovedFiles[0].Name%''' AppendNewLine: True IfFileExists: File.IfFileExists.Append Encoding: File.FileEncoding.Unicode

@@ -1,0 +1,77 @@
+# Data-quality rules. Each check has a name, a type, the column(s) it looks at,
+# and a severity (error = must fix, warning = review).
+# Supported types: not_null, allowed_values, regex, range, duplicate_key,
+#                  duplicate_value, foreign_key, date_order
+
+tables:
+  accounts:
+    file: data/accounts.csv
+    key: account_id
+    checks:
+      - name: duplicate_account_id
+        type: duplicate_key
+        column: account_id
+        severity: error
+      - name: duplicate_account_name
+        type: duplicate_value
+        column: account_name
+        severity: warning
+      - name: missing_owner_email
+        type: not_null
+        column: owner_email
+        severity: error
+      - name: missing_industry
+        type: not_null
+        column: industry
+        severity: error
+      - name: invalid_status
+        type: allowed_values
+        column: status
+        values: [Active, Inactive, Prospect]
+        severity: error
+      - name: invalid_email_format
+        type: regex
+        column: owner_email
+        pattern: '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+        severity: error
+
+  opportunities:
+    file: data/opportunities.csv
+    key: opportunity_id
+    checks:
+      - name: duplicate_opportunity_id
+        type: duplicate_key
+        column: opportunity_id
+        severity: error
+      - name: orphan_account_id
+        type: foreign_key
+        column: account_id
+        ref_table: accounts
+        ref_column: account_id
+        severity: error
+      - name: close_before_created
+        type: date_order
+        start_column: created_date
+        end_column: close_date
+        severity: error
+      - name: non_positive_amount
+        type: range
+        column: amount_usd
+        min: 0
+        min_inclusive: false
+        severity: error
+      - name: invalid_stage
+        type: allowed_values
+        column: stage
+        values: [Prospecting, Qualification, Proposal, Negotiation, Closed Won, Closed Lost]
+        severity: error
+      - name: probability_out_of_range
+        type: range
+        column: probability_pct
+        min: 0
+        max: 100
+        severity: error
+      - name: missing_close_date
+        type: not_null
+        column: close_date
+        severity: error
