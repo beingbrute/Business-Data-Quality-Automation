@@ -52,6 +52,8 @@ The test data has **90 planted errors** across 13 types, listed in `data/expecte
 
 ![Excel summary sheet](docs/screenshots/excel_summary.png)
 
+A real report from one run is included as [`docs/sample_report.xlsx`](docs/sample_report.xlsx) (sample output; reports are otherwise generated on each run and not stored in the repository).
+
 Each failed check gets its own sheet listing the exact rows to fix:
 
 ![Exception rows for invalid_status](docs/screenshots/excel_exceptions.png)
@@ -122,6 +124,18 @@ python src\validate.py          # run the checks, write the report and logs
 python -m pytest -v             # run the 15 tests
 ```
 
+### Running it on another machine
+
+Three paths in this project are specific to the author's laptop. Change them to your own before running the flow or the schedule:
+
+| Where | Path to change |
+|---|---|
+| Power Automate flow, action 2 (`Set variable ProjectDir`) | `C:\Users\hp\Desktop\Business-Data-Quality-Automation` → your project folder |
+| Power Automate flow, action 3 (`Run DOS command`) | `C:\Users\hp\anaconda3\python.exe` → the path of your `python.exe` (find it with `where python`) |
+| Scheduled task (below) | `$dir` → your project folder |
+
+The Python scripts themselves need no changes; they find their files relative to the project folder.
+
 To schedule the daily check (adjust the folder path):
 
 ```powershell
@@ -147,6 +161,7 @@ Business-Data-Quality-Automation/
 ├── docs/
 │   ├── test_plan.md            # 17 test cases and the defect log
 │   ├── pad_flow.txt            # Power Automate flow actions as text
+│   ├── sample_report.xlsx      # one real exception report (sample)
 │   └── screenshots/
 ├── src/
 │   ├── generate_data.py        # creates the data with planted errors
