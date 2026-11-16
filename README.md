@@ -86,6 +86,20 @@ The free version of Power Automate Desktop cannot schedule flows, so the Python 
 
 ![Scheduled runs](docs/screenshots/scheduled_run.png)
 
+### 5. Excel VBA reporting step (`vba/DQReport.bas`)
+After `validate.py` writes a report, the `ProcessLatestReport` macro in `vba/DQ_Macros.xlsm`:
+- finds the newest `dq_report_*.xlsx` under `reports/`, including the dated folders created by the Power Automate flow;
+- adds a summary block to the Summary sheet: report file, processing time, FAIL / WARN / PASS counts and total rows failed;
+- links each check name to its exception sheet;
+- exports the Summary sheet as a one-page PDF next to the report (`..._summary.pdf`);
+- appends one row per run to `logs/dq_tracker.xlsx`, with a month column for monthly reporting, and never logs the same report twice.
+
+A report that has already been processed is detected and left unchanged, and any error is reported in a message instead of stopping halfway.
+
+Run it: open `vba/DQ_Macros.xlsm`, enable macros, press Alt+F8, choose `ProcessLatestReport`, then Run.
+
+![Summary sheet after the macro](docs/screenshots/vba_summary.png)
+
 ---
 
 ## Testing
@@ -169,6 +183,9 @@ Business-Data-Quality-Automation/
 ├── tests/
 │   ├── conftest.py
 │   └── test_validate.py        # 15 pytest tests
+├── vba/
+│   ├── DQReport.bas            # VBA module (exported source)
+│   └── DQ_Macros.xlsm          # macro workbook that runs it
 ├── requirements.txt
 └── README.md
 ```
